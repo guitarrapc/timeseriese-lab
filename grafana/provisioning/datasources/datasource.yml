@@ -1,0 +1,9 @@
+apiVersion: 1
+
+datasources:
+  - name: Timestream
+    type: grafana-timestream-datasource
+    jsonData:
+      authType: credentials
+      endpoint: query-cell1.timestream.us-west-2.amazonaws.com
+      defaultRegion: us-west-2

@@ -1,0 +1,14 @@
+version: "3"
+services:
+  grafana:
+    build:
+      dockerfile: ./grafana/Dockerfile
+      context: .
+      args:
+        - GRAFANA_VERSION=7.5.1
+        - GF_INSTALL_PLUGINS=grafana-timestream-datasource
+    ports:
+      - 3000:3000
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ~/.aws/credentials/:/usr/share/grafana/.aws/credentials
