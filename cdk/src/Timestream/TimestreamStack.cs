@@ -10,18 +10,15 @@ namespace Timestream
     {
         internal TimestreamStack(Construct scope, string id, IStackProps props = null) : base(scope, id, props)
         {
-            var key = new Key(this, "timestream-sample", new KeyProps
-            {
-                EnableKeyRotation = true,
-            });
+            var key = Alias.FromAliasName(this, "timestream", "alias/aws/timestream");
             var database = new CfnDatabase(this, "sampledb", new CfnDatabaseProps
             {
                 DatabaseName = "sampledb",
                 KmsKeyId = key.KeyId,
             });
-            var table = new CfnTable(this, "temp_humidities", new CfnTableProps
+            var table = new CfnTable(this, "sampletable", new CfnTableProps
             {
-                TableName = "temp_humidities",
+                TableName = "sampletable",
                 DatabaseName = database.DatabaseName,
                 RetentionProperties = new Dictionary<string, string>()
                 {
