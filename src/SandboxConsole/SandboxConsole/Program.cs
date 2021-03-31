@@ -30,7 +30,7 @@ namespace SandboxConsole
             {
                 var metadata = new[] {
                     new RecordMetadata("hostname", Environment.MachineName),
-                    new RecordMetadata("os", os[(os.Length - 1) % i]),
+                    new RecordMetadata("os", os[i % os.Length]),
                     new RecordMetadata("region", "日本"),
                 };
                 var cpu = random.Next(30, 100);
