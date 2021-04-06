@@ -1,0 +1,23 @@
+version: "3"
+services:
+  timescaledb:
+    image: timescale/timescaledb:2.1.0-pg13
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=password
+
+  pgadmin:
+    image: dpage/pgadmin4:5.1
+    ports:
+      - 8080:80
+    environment:
+      PGADMIN_DEFAULT_EMAIL: root@example.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    depends_on:
+      - timescaledb
+
+  grafana:
+    image: grafana/grafana:7.5.2-ubuntu
+    ports:
+      - 3000:3000
