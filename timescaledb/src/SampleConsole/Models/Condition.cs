@@ -32,7 +32,7 @@ namespace SampleConsole.Models
         public static Condition[] InitialOfficeData(int dataCount)
         {
             var time = new DateTime(2021, 1, 1, 0, 0, 0);
-            var location = "Office";
+            var location = "オフィス";
             var temp = 10.0;
             var hum = 30.0;
             var conditions = Enumerable.Range(1, dataCount).Select(x => new Condition
@@ -49,7 +49,7 @@ namespace SampleConsole.Models
         public static Condition[] InitialHomeData(int dataCount)
         {
             var time = new DateTime(2021, 1, 1, 0, 0, 0);
-            var location = "Home";
+            var location = "家";
             var temp = 5.0;
             var hum = 40.0;
             var conditions = Enumerable.Range(1, dataCount).Select(x => new Condition
