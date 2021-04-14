@@ -23,6 +23,12 @@ add random test data for past 100sec.
 dotnet run -- Runner random -count 100
 ```
 
+keep insert random data.
+
+```shell
+dotnet run -- Runner keep
+```
+
 add ondemand test data.
 
 ```shell

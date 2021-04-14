@@ -65,6 +65,34 @@ namespace SampleConsole
             }
         }
 
+        [Command("keep")]
+        public async Task Keep()
+        {
+            Console.WriteLine($"keep inserting data");
+            using var con = _connection.Create();
+            await con.OpenAsync(Context.CancellationToken);
+
+            var current = 1;
+            while (!Context.CancellationToken.IsCancellationRequested)
+            {
+                Console.Write($"{current} ");
+                var time = DateTime.UtcNow;
+                var data = Enumerable.Concat(
+                    Condition.GenerateRandomOfficeData(time, 1),
+                    Condition.GenerateRandomHomeData(time, 1)
+                    )
+                    .ToArray();
+                using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+                {
+                    await Condition.InsertBulkAsync(con, data);
+                    transaction.Complete();
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(1), Context.CancellationToken);
+                current++;
+            }
+        }
+
         [Command("random")]
         public async Task Random(int count = 1000)
         {
