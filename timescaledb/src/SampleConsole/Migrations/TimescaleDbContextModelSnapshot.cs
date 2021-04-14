@@ -22,18 +22,22 @@ namespace SampleConsole.Migrations
             modelBuilder.Entity("SampleConsole.Models.Condition", b =>
                 {
                     b.Property<double?>("Humidity")
-                        .HasColumnType("double precision");
+                        .HasColumnType("double precision")
+                        .HasColumnName("humidity");
 
                     b.Property<string>("Location")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("location");
 
                     b.Property<double?>("Temperature")
-                        .HasColumnType("double precision");
+                        .HasColumnType("double precision")
+                        .HasColumnName("temperature");
 
                     b.Property<DateTime>("Time")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("time");
 
-                    b.ToTable("Conditions");
+                    b.ToTable("conditions");
                 });
 #pragma warning restore 612, 618
         }

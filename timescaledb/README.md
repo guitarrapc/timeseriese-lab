@@ -1,4 +1,4 @@
-## Step to start
+## Getting started
 
 up containers.
 
@@ -9,8 +9,38 @@ docker-compose up -d
 migrate & seed initial data.
 
 ```shell
+dotnet run -- Runner migrate
+
+or
+
 dotnet ef database update
 dotnet run -- Runner seed
+```
+
+add random test data for past 100sec.
+
+```shell
+dotnet run -- Runner random -data 100
+```
+
+add ondemand test data.
+
+```shell
+dotnet run -- Runner test -location オフィス -temperature 20.1 -humidity 50.0
+```
+
+**clean up**
+
+down all containers. (keep data)
+
+```
+docker-compose down --remove-orphans --volumes
+```
+
+down all containers. (initialize data)
+
+```
+docker-compose down --remove-orphans
 ```
 
 ## Access
@@ -35,12 +65,6 @@ timescaledb:5432 (from container)
 
 * user/pass: `postres`/`password`
 
-## Step to stop
-
-down all containers.
-```
-docker-compose down --volumes --remove-orphans
-```
 
 ## TIPS
 

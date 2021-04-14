@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using SampleConsole.Models;
 
 namespace SampleConsole.Migrations
 {
@@ -8,13 +9,13 @@ namespace SampleConsole.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Conditions",
+                name: "conditions",
                 columns: table => new
                 {
-                    Time = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
-                    Location = table.Column<string>(type: "text", nullable: true),
-                    Temperature = table.Column<double>(type: "double precision", nullable: true),
-                    Humidity = table.Column<double>(type: "double precision", nullable: true)
+                    time = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    location = table.Column<string>(type: "text", nullable: true),
+                    temperature = table.Column<double>(type: "double precision", nullable: true),
+                    humidity = table.Column<double>(type: "double precision", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -24,7 +25,7 @@ namespace SampleConsole.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Conditions");
+                name: "conditions");
         }
     }
 }
