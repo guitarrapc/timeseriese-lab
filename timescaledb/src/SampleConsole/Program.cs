@@ -66,16 +66,16 @@ namespace SampleConsole
         }
 
         [Command("random")]
-        public async Task Random(int count = 100)
+        public async Task Random(int count = 1000)
         {
             var time = DateTime.UtcNow;
-            var random = new Random();
-            var data = Enumerable.Range(0, count).SelectMany(x => 
-                Enumerable.Concat(Condition.GenerateRandomOfficeData(time.AddSeconds(-count), count),
-                Condition.GenerateRandomHomeData(time.AddSeconds(-count), count)))
+            var data = Enumerable.Concat(
+                Condition.GenerateRandomOfficeData(time.AddSeconds(-count), count),
+                Condition.GenerateRandomHomeData(time.AddSeconds(-count), count)
+                )
                 .ToArray();
 
-            Console.WriteLine("random insert data");
+            Console.WriteLine($"insert random {count} data");
             using var con = _connection.Create();
             using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             {

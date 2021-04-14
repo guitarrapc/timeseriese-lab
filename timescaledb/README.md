@@ -20,7 +20,7 @@ dotnet run -- Runner seed
 add random test data for past 100sec.
 
 ```shell
-dotnet run -- Runner random -data 100
+dotnet run -- Runner random -count 100
 ```
 
 add ondemand test data.

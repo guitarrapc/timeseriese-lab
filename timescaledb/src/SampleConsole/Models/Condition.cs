@@ -53,7 +53,7 @@ namespace SampleConsole.Models
             var location = "オフィス";
             double temp = random.Next(10, 15);
             double hum = random.Next(30, 50);
-            var conditions = Enumerable.Range(1, dataCount).Select(x => new Condition
+            var conditions = Enumerable.Range(0, dataCount).Select(x => new Condition
             {
                 Time = time.AddSeconds(x),
                 Location = location,
@@ -70,7 +70,7 @@ namespace SampleConsole.Models
             var location = "家";
             double temp = random.Next(5, 10);
             double hum = random.Next(40, 60);
-            var conditions = Enumerable.Range(1, dataCount).Select(x => new Condition
+            var conditions = Enumerable.Range(0, dataCount).Select(x => new Condition
             {
                 Time = time.AddSeconds(x),
                 Location = location,
