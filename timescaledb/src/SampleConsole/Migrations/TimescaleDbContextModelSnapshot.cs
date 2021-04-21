@@ -39,6 +39,27 @@ namespace SampleConsole.Migrations
 
                     b.ToTable("conditions");
                 });
+
+            modelBuilder.Entity("SampleConsole.Models.SimpleData", b =>
+                {
+                    b.Property<double>("Humidity")
+                        .HasColumnType("double precision")
+                        .HasColumnName("humidity");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<double>("Temperature")
+                        .HasColumnType("double precision")
+                        .HasColumnName("temperature");
+
+                    b.ToTable("simpledata");
+                });
 #pragma warning restore 612, 618
         }
     }

@@ -20,12 +20,29 @@ namespace SampleConsole.Migrations
                 {
                 });
             migrationBuilder.Sql("SELECT create_hypertable('conditions', 'time')");
+
+            migrationBuilder.CreateTable(
+                name: "simpledata",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false),
+                    temperature = table.Column<double>(type: "double precision", nullable: false),
+                    humidity = table.Column<double>(type: "double precision", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                });
+            migrationBuilder.Sql("SELECT create_hypertable('simpledata', 'id')");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "conditions");
+
+            migrationBuilder.DropTable(
+                name: "simpledata");
         }
     }
 }

@@ -17,7 +17,7 @@ namespace SampleConsole
     {
         static async Task Main(string[] args)
         {
-            args = "Runner migrate -count 100000".Split(" ");
+            // args = "Runner migrate -count 100000".Split(" ");
             await Host.CreateDefaultBuilder()
                 .ConfigureServices((hostContext, services) => services.AddTimeScaleDbConnection(hostContext.Configuration))
                 .ConfigureServices((hostContext, services) => services.AddTimeScaleDbContext(hostContext.Configuration))
@@ -129,7 +129,8 @@ namespace SampleConsole
         public async Task Migrate(int parallel = 100, int count = 10000)
         {
             await _dbContext.Database.MigrateAsync(Context.CancellationToken);
-            await SeedCopy(parallel, count);
+            //await SeedCopy(parallel, count);
+            await SizeSeedCopy(parallel, count);
         }
 
         [Command("seed")]
@@ -208,6 +209,51 @@ namespace SampleConsole
                             try
                             {
                                 var rows = await Condition.CopyAsync(connection, data, ct);
+                                lock (gate)
+                                {
+                                    completed += rows;
+                                }
+                                Console.WriteLine($"complete {completed}/{count}");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.Error.WriteLine($"{connection.State} {ex}");
+                            }
+                        }
+                    }
+                }, ct);
+                tasks.Add(task);
+            }
+            await Task.WhenAll(tasks);
+            Console.WriteLine($"Complete seed database. plan {count}, completed {completed}, duration {sw.Elapsed.TotalSeconds}sec");
+        }
+
+        [Command("sizeseedcopy")]
+        public async Task SizeSeedCopy(int parallel = 100, int count = 10000)
+        {
+            Console.WriteLine($"Begin seed copy database. {count} rows, parallel {parallel}");
+            var size = count;
+            var initData = SimpleData.GenerateSameData(0, size);
+            var groups = initData.Buffer(size / parallel).ToArray();
+
+            var gate = new object();
+            ulong completed = 0;
+            var tasks = new List<Task>();
+            var ct = Context.CancellationToken;
+            var sw = Stopwatch.StartNew();
+            foreach (var group in groups)
+            {
+                var task = Task.Run(async () =>
+                {
+                    using (var connection = _connection.Create())
+                    {
+                        await connection.OpenAsync(ct);
+                        // 10000 will cause connection is not open.
+                        foreach (var data in group.Buffer(5000))
+                        {
+                            try
+                            {
+                                var rows = await SimpleData.CopyAsync(connection, data, ct);
                                 lock (gate)
                                 {
                                     completed += rows;

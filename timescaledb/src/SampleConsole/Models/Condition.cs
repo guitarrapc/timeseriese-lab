@@ -17,7 +17,8 @@ namespace SampleConsole.Models
     public class Condition : IHyperTable
     {
         private static string TableName = AttributeHelper.GetTableName<Condition>();
-        private static string Columns = string.Join(",", AttributeHelper.GetColumns<Condition>());
+        private static string[] Columns = AttributeHelper.GetColumns<Condition>();
+        private static string ColumnNames = string.Join(",", Columns);
 
         [Column("time")]
         public DateTime Time { get; init; }
@@ -28,7 +29,7 @@ namespace SampleConsole.Models
         [Column("humidity")]
         public double? Humidity { get; set; }
 
-        public (string tableName, string columnName) GetHyperTableKey() => (TableName, AttributeUtilities.GetColumnName(this.GetType(), nameof(Time)));
+        public (string tableName, string columnName) GetHyperTableKey() => (TableName, Columns.FirstOrDefault(x => string.Equals(x, nameof(Time), StringComparison.OrdinalIgnoreCase)));
 
         public static async Task<Condition[]> BetweenAsync(IDbConnection connection, DateTime from, DateTime to)
         {
@@ -41,7 +42,7 @@ namespace SampleConsole.Models
         public static async Task<int> InsertBulkAsync(IDbConnection connection, IDbTransaction transaction, IEnumerable<Condition> values, int timeoutSec = 60)
         {
             var rows = await connection.ExecuteAsync(
-                @$"INSERT INTO {TableName} ({Columns}) VALUES (@Time, @Location, @Temperature, @Humidity);"
+                @$"INSERT INTO {TableName} ({ColumnNames}) VALUES (@Time, @Location, @Temperature, @Humidity);"
                 , values, transaction, timeoutSec);
             return rows;
         }
@@ -50,7 +51,7 @@ namespace SampleConsole.Models
         {
             // COPY not support Nullable<T>
             // https://github.com/npgsql/npgsql/issues/1965
-            using var writer = connection.BeginBinaryImport($"COPY {TableName} ({Columns}) FROM STDIN (FORMAT BINARY)");
+            using var writer = connection.BeginBinaryImport($"COPY {TableName} ({ColumnNames}) FROM STDIN (FORMAT BINARY)");
             foreach (var value in values)
             {
                 await writer.StartRowAsync(ct);

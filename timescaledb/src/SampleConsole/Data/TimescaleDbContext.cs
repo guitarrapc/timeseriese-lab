@@ -40,6 +40,7 @@ namespace SampleConsole.Data
         }
 
         public DbSet<Condition> Conditions { get; set; }
+        public DbSet<SimpleData> SimpleData { get; set; }
     }
 
     /// <summary>
