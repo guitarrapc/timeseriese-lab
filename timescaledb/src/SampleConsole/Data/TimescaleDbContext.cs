@@ -1,13 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations.Design;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.Internal;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Migrations;
 using SampleConsole.Data;
 using SampleConsole.Models;
 using System;
@@ -41,30 +39,19 @@ namespace SampleConsole.Data
         {
         }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            base.OnConfiguring(optionsBuilder);
-            optionsBuilder.ReplaceService<IMigrationsSqlGenerator, TimescaledbMigrationSqlGenerator>();
-        }
-
         public DbSet<Condition> Conditions { get; set; }
     }
 
     /// <summary>
-    /// MigrationSqlGenerator for Timescaledb.
-    /// TimescaleDb require run `SELECT create_hypertable('TABLE', 'time')` to map table to chunk.
-    /// This MigrationSqlGenerator will automatically run create_hypertable query when table create migration triggered.
+    /// MigrationOperationGenerator for Timescaledb.
+    /// TimescaleDb require run `SELECT create_hypertable('TABLE', 'time')` to convert table to timescaledb.
+    /// This MigrationOperationGenerator will automatically generate create_hypertable query when table create migration triggered.
     /// </summary>
-    internal class TimescaledbMigrationSqlGenerator: NpgsqlMigrationsSqlGenerator
+    public class TimescaledbMigrationOperationGenerator : CSharpMigrationOperationGenerator
     {
         private readonly Dictionary<string, (string table, string key)> hyperTables;
 
-        public TimescaledbMigrationSqlGenerator(
-            MigrationsSqlGeneratorDependencies dependencies,
-#pragma warning disable EF1001 // Internal EF Core API usage.
-            INpgsqlOptions npgsqlOptions)
-#pragma warning restore EF1001 // Internal EF Core API usage.
-            : base(dependencies, npgsqlOptions)
+        public TimescaledbMigrationOperationGenerator(CSharpMigrationOperationGeneratorDependencies dependencies) : base(dependencies)
         {
             hyperTables = Assembly.GetExecutingAssembly().GetTypes()
                 .Where(x => x.GetInterfaces().Contains(typeof(IHyperTable)))
@@ -72,38 +59,37 @@ namespace SampleConsole.Data
                 .Select(x => x.GetHyperTableKey())
                 .ToDictionary(kv => kv.tableName, kv => kv);
         }
-
-        protected override void Generate(CreateTableOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
+        protected override void Generate(CreateTableOperation operation, IndentedStringBuilder builder)
         {
-            base.Generate(operation, model, builder, terminate);
+            base.Generate(operation, builder);
+
             if (hyperTables.TryGetValue(operation.Name, out var keys))
             {
+                builder.Append(";").AppendLine();
                 GenerateHyperTable(keys.table, keys.key, builder);
             }
         }
 
         /// <summary>
         /// Auto execute create_hypertable query when Create Table executed.
+        /// generated sample: migrationBuilder.Sql("SELECT create_hypertable('TABLE', 'time')");
         /// </summary>
         /// <param name="table"></param>
         /// <param name="key"></param>
         /// <param name="builder"></param>
-        private void GenerateHyperTable(string table, string key, MigrationCommandListBuilder builder)
+        private void GenerateHyperTable(string table, string key, IndentedStringBuilder builder)
         {
-            Console.WriteLine($"Creating hypertable for table. table: {table}");
-            var sqlHelper = Dependencies.SqlGenerationHelper;
-            var stringMapping = Dependencies.TypeMappingSource.FindMapping(typeof(string));
-
-            // SELECT create_hypertable('TABLE', 'time')
-            builder
-                .Append("SELECT create_hypertable(")
-                .Append(stringMapping.GenerateSqlLiteral(table))
-                .Append(",")
-                .Append(stringMapping.GenerateSqlLiteral(key))
-                .Append(")")
-                .Append(sqlHelper.StatementTerminator)
-                .EndCommand();
+            Console.WriteLine($"Creating hypertable migration query for table. table {table}, key {key}");
+            builder.Append(@$"migrationBuilder.Sql(""SELECT create_hypertable('{table}', '{key}')"")");
         }
+    }
+    /// <summary>
+    /// Automatically discover via EF Core Reflection
+    /// </summary>
+    public class TimescaledbDesignTimeServices : IDesignTimeServices
+    {
+        public void ConfigureDesignTimeServices(IServiceCollection services)
+            => services.AddSingleton<ICSharpMigrationOperationGenerator, TimescaledbMigrationOperationGenerator>();
     }
 
     /// <summary>

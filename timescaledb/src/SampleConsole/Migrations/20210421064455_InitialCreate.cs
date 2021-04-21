@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using SampleConsole.Models;
 
 namespace SampleConsole.Migrations
 {
@@ -20,6 +19,7 @@ namespace SampleConsole.Migrations
                 constraints: table =>
                 {
                 });
+            migrationBuilder.Sql("SELECT create_hypertable('conditions', 'time')");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
