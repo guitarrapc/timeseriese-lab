@@ -9,6 +9,7 @@ docker-compose up -d
 migrate & seed initial data.
 
 ```shell
+cd src/SampleConsole/
 dotnet run -- Runner migrate
 
 or
@@ -39,13 +40,13 @@ dotnet run -- Runner test -location オフィス -temperature 20.1 -humidity 50.
 
 down all containers. (keep data)
 
-```
+```shell
 docker-compose down --remove-orphans --volumes
 ```
 
 down all containers. (initialize data)
 
-```
+```shell
 docker-compose down --remove-orphans
 ```
 
@@ -74,7 +75,7 @@ timescaledb:5432 (from container)
 
 ## TIPS
 
-**Add own migrations**
+### Add own migrations
 
 If you change any Table change, add your migration.
 
@@ -91,10 +92,30 @@ create migrations
 dotnet ef migrations add InitialCreate
 ```
 
-**re-migrate from beginning**
+### re-migrate from beginning
 
 drop database before migrations.
 
 ```shell
 dotnet ef database drop --force
 ```
+
+### Disk Usage
+
+```shell
+docker-compose exec timescaledb du -hs /var/lib/postgresql/data/
+```
+
+```sql
+SELECT pg_size_pretty(pg_database_size('timeseriese'))
+```
+
+line of insert | sql | df
+---- | ---- | ----
+Initial | 9165 kB | 51.3M
+10,000 | 10 MB | 52.4M (+1.1M)
+100,000 | 17 MB (+7 MB)| 75.7M (+13.3M)
+1,000,000 | 90 MB (+MB)| 228.0M (+M)
+10,000,000 | 90 MB (+MB)| 228.0M (+M)
+
+

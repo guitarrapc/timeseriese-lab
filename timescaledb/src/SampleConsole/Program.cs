@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using SampleConsole.Data;
 using SampleConsole.Models;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Transactions;
@@ -14,7 +16,10 @@ namespace SampleConsole
 {
     class Program
     {
-        static async Task Main(string[] args) => await Host.CreateDefaultBuilder()
+        static async Task Main(string[] args)
+        {
+            args = "Runner migrate -count 100000".Split(" ");
+            await Host.CreateDefaultBuilder()
                 .ConfigureServices((hostContext, services) => services.AddTimeScaleDbConnection(hostContext.Configuration))
                 .ConfigureServices((hostContext, services) => services.AddTimeScaleDbContext(hostContext.Configuration))
                 .ConfigureLogging((context, logging) =>
@@ -23,6 +28,7 @@ namespace SampleConsole
                     logging.AddZLoggerConsole(true);
                 })
                 .RunConsoleAppFrameworkAsync(args);
+        }
     }
 
     public class Runner : ConsoleAppBase
@@ -41,24 +47,24 @@ namespace SampleConsole
             var time = DateTime.UtcNow;
 
             Console.WriteLine("test insert data");
-            using var con = _connection.Create();
-            using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+            using var connection = _connection.Create();
+            using (var transaction = await connection.BeginTransactionAsync(Context.CancellationToken))
             {
-                await con.OpenAsync(Context.CancellationToken);
-                await Condition.InsertBulkAsync(con, new[] { 
+                await connection.OpenAsync(Context.CancellationToken);
+                await Condition.InsertBulkAsync(connection, transaction, new[] {
                     new Condition
                     {
                         Location = location,
                         Temperature = temperature,
                         Humidity = humidity,
                         Time = time,
-                    } 
+                    }
                 });
-                transaction.Complete();
+                await transaction.CommitAsync();
             }
 
             Console.WriteLine("test read from database");
-            var conditions = await Condition.BetweenAsync(con, time, time);
+            var conditions = await Condition.BetweenAsync(connection, time, time);
             foreach (var condition in conditions)
             {
                 Console.WriteLine($"{condition.Time}, {condition.Location}, {condition.Temperature}, {condition.Humidity}");
@@ -69,8 +75,8 @@ namespace SampleConsole
         public async Task Keep()
         {
             Console.WriteLine($"keep inserting data");
-            using var con = _connection.Create();
-            await con.OpenAsync(Context.CancellationToken);
+            using var connection = _connection.Create();
+            await connection.OpenAsync(Context.CancellationToken);
 
             var current = 1;
             while (!Context.CancellationToken.IsCancellationRequested)
@@ -80,12 +86,12 @@ namespace SampleConsole
                 var data = Enumerable.Concat(
                     Condition.GenerateRandomOfficeData(time, 1),
                     Condition.GenerateRandomHomeData(time, 1)
-                    )
-                    .ToArray();
-                using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+                )
+                .ToArray();
+                using (var transaction = await connection.BeginTransactionAsync(Context.CancellationToken))
                 {
-                    await Condition.InsertBulkAsync(con, data);
-                    transaction.Complete();
+                    await Condition.InsertBulkAsync(connection, transaction, data);
+                    await transaction.CommitAsync();
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(1), Context.CancellationToken);
@@ -104,16 +110,16 @@ namespace SampleConsole
                 .ToArray();
 
             Console.WriteLine($"insert random {count} data");
-            using var con = _connection.Create();
-            using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+            using var connection = _connection.Create();
+            using (var transaction = await connection.BeginTransactionAsync(Context.CancellationToken))
             {
-                await con.OpenAsync(Context.CancellationToken);
-                await Condition.InsertBulkAsync(con, data);
-                transaction.Complete();
+                await connection.OpenAsync(Context.CancellationToken);
+                await Condition.InsertBulkAsync(connection, transaction, data);
+                await transaction.CommitAsync();
             }
 
             Console.WriteLine("read from database");
-            var conditions = await Condition.BetweenAsync(con, time.AddSeconds(-count), time);
+            var conditions = await Condition.BetweenAsync(connection, time.AddSeconds(-count), time);
             foreach (var condition in conditions)
             {
                 Console.WriteLine($"{condition.Time}, {condition.Location}, {condition.Temperature}, {condition.Humidity}");
@@ -121,24 +127,105 @@ namespace SampleConsole
         }
 
         [Command("migrate")]
-        public async Task Migrate()
+        public async Task Migrate(int parallel = 100, int count = 10000)
         {
             await _dbContext.Database.MigrateAsync(Context.CancellationToken);
-            await Seed();
+            await SeedCopy(parallel, count);
         }
 
         [Command("seed")]
-        public async Task Seed()
+        public async Task Seed(int parallel = 100, int count = 10000)
         {
-            Console.WriteLine("seeding database.");
-            using var con = _connection.Create();
-            await con.OpenAsync(Context.CancellationToken);
-            using (var transaction = await con.BeginTransactionAsync(Context.CancellationToken))
+            Console.WriteLine($"Begin seed database. {count} rows, parallel {parallel}");
+            var size = count;
+            var initData = Condition.GenerateRandomOfficeData(new DateTime(2020, 1, 1, 0, 0, 0), size);
+            var groups = initData.Buffer(size / parallel).ToArray();
+
+            var gate = new object();
+            var completed = 0;
+            var tasks = new List<Task>();
+            var ct = Context.CancellationToken;
+            var sw = Stopwatch.StartNew();
+            foreach (var group in groups)
             {
-                await con.SeedAsync();
-                await transaction.CommitAsync();
+                var task = Task.Run(async () =>
+                {
+                    using (var connection = _connection.Create())
+                    {
+                        await connection.OpenAsync(ct);
+                            // 10000 will cause timeout
+                            foreach (var data in group.Buffer(1000))
+                        {
+                            using (var transaction = await connection.BeginTransactionAsync(ct))
+                            {
+                                try
+                                {
+                                    var rows = await Condition.InsertBulkAsync(connection, transaction, data);
+                                    await transaction.CommitAsync(ct);
+                                    lock (gate)
+                                    {
+                                        completed += rows;
+                                    }
+                                    Console.WriteLine($"complete {completed}/{count}");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.Error.WriteLine(ex);
+                                    await transaction.RollbackAsync(ct);
+                                }
+                            }
+                        }
+                    }
+                }, ct);
+                tasks.Add(task);
             }
-            Console.WriteLine("seeding complete.");
+            await Task.WhenAll(tasks);
+            Console.WriteLine($"Complete seed database. plan {count}, completed {completed}, duration {sw.Elapsed.TotalSeconds}sec");
+        }
+
+        [Command("seedcopy")]
+        public async Task SeedCopy(int parallel = 100, int count = 10000)
+        {
+            Console.WriteLine($"Begin seed copy database. {count} rows, parallel {parallel}");
+            var size = count;
+            var initData = Condition.GenerateRandomOfficeData(new DateTime(2020, 1, 1, 0, 0, 0), size);
+            var groups = initData.Buffer(size / parallel).ToArray();
+
+            var gate = new object();
+            ulong completed = 0;
+            var tasks = new List<Task>();
+            var ct = Context.CancellationToken;
+            var sw = Stopwatch.StartNew();
+            foreach (var group in groups)
+            {
+                var task = Task.Run(async () =>
+                {
+                    using (var connection = _connection.Create())
+                    {
+                        await connection.OpenAsync(ct);
+                            // 10000 will cause connection is not open.
+                            foreach (var data in group.Buffer(5000))
+                        {
+                            try
+                            {
+                                var rows = await Condition.CopyAsync(connection, data, ct);
+                                lock (gate)
+                                {
+                                    completed += rows;
+                                }
+                                Console.WriteLine($"complete {completed}/{count}");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.Error.WriteLine($"{connection.State} {ex}");
+                            }
+                        }
+                    }
+                }, ct);
+                tasks.Add(task);
+            }
+            await Task.WhenAll(tasks);
+            Console.WriteLine($"Complete seed database. plan {count}, completed {completed}, duration {sw.Elapsed.TotalSeconds}sec");
         }
     }
 }

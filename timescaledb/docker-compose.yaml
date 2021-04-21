@@ -13,10 +13,9 @@ services:
     environment:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=timeseriese
+      - TS_TUNE_MAX_CONNS=1000
     volumes:
       - postgresql:/var/lib/postgresql/data
-      # when you want run sql / bash on provisioning
-      #- ./postgresq/ldocker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
 
   pgadmin:
     image: dpage/pgadmin4:5.1

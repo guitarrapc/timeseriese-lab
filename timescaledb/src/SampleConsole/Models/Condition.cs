@@ -1,9 +1,13 @@
 ﻿using Dapper;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SampleConsole.Models
@@ -12,7 +16,8 @@ namespace SampleConsole.Models
     [Table("conditions")]
     public class Condition : IHyperTable
     {
-        private const string TABLE_NAME = "conditions";
+        private static string TableName = AttributeHelper.GetTableName<Condition>();
+        private static string Columns = string.Join(",", AttributeHelper.GetColumns<Condition>());
 
         [Column("time")]
         public DateTime Time { get; init; }
@@ -23,30 +28,41 @@ namespace SampleConsole.Models
         [Column("humidity")]
         public double? Humidity { get; set; }
 
-        public (string tableName, string columnName) GetHyperTableKey() => (TABLE_NAME, AttributeUtilities.GetColumnName(this.GetType(), nameof(Time)));
+        public (string tableName, string columnName) GetHyperTableKey() => (TableName, AttributeUtilities.GetColumnName(this.GetType(), nameof(Time)));
 
         public static async Task<Condition[]> BetweenAsync(IDbConnection connection, DateTime from, DateTime to)
         {
             var results = await connection.QueryAsync<Condition>(
-                $@"SELECT * FROM {TABLE_NAME} WHERE {nameof(Time)} between @from AND @to",
+                $@"SELECT * FROM {TableName} WHERE {nameof(Time)} between @from AND @to",
                 new { from, to });
             return results.ToArray();
         }
 
-        public static async Task<int> InsertBulkAsync(IDbConnection connection, Condition[] values)
+        public static async Task<int> InsertBulkAsync(IDbConnection connection, IDbTransaction transaction, IEnumerable<Condition> values, int timeoutSec = 60)
         {
             var rows = await connection.ExecuteAsync(
-                @$"INSERT INTO {TABLE_NAME} (
-                    {nameof(Time)},
-                    {nameof(Location)},
-                    {nameof(Temperature)},
-                    {nameof(Humidity)}
-                )
-                VALUES (
-                    @Time, @Location, @Temperature, @Humidity
-                );", values);
+                @$"INSERT INTO {TableName} ({Columns}) VALUES (@Time, @Location, @Temperature, @Humidity);"
+                , values, transaction, timeoutSec);
             return rows;
         }
+
+        public static async Task<ulong> CopyAsync(NpgsqlConnection connection, IEnumerable<Condition> values, CancellationToken ct)
+        {
+            // COPY not support Nullable<T>
+            // https://github.com/npgsql/npgsql/issues/1965
+            using var writer = connection.BeginBinaryImport($"COPY {TableName} ({Columns}) FROM STDIN (FORMAT BINARY)");
+            foreach (var value in values)
+            {
+                await writer.StartRowAsync(ct);
+                await writer.WriteAsync(value.Time, ct);
+                await writer.WriteAsync(value.Location, ct);
+                await writer.WriteAsync(value.Temperature.Value, ct);
+                await writer.WriteAsync(value.Humidity.Value, ct);
+            }
+            var rows = await writer.CompleteAsync(ct);
+            return rows;
+        }
+
         public static Condition[] GenerateRandomOfficeData(DateTime time, int dataCount)
         {
             var random = new Random();

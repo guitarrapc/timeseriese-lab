@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -43,6 +43,7 @@ namespace SampleConsole.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+            base.OnConfiguring(optionsBuilder);
             optionsBuilder.ReplaceService<IMigrationsSqlGenerator, TimescaledbMigrationSqlGenerator>();
         }
 
@@ -75,7 +76,6 @@ namespace SampleConsole.Data
         protected override void Generate(CreateTableOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
         {
             base.Generate(operation, model, builder, terminate);
-
             if (hyperTables.TryGetValue(operation.Name, out var keys))
             {
                 GenerateHyperTable(keys.table, keys.key, builder);
@@ -101,7 +101,7 @@ namespace SampleConsole.Data
                 .Append(",")
                 .Append(stringMapping.GenerateSqlLiteral(key))
                 .Append(")")
-                .AppendLine(sqlHelper.StatementTerminator)
+                .Append(sqlHelper.StatementTerminator)
                 .EndCommand();
         }
     }
@@ -162,14 +162,14 @@ namespace SampleConsole
 
     public static class IDbConnectionExtensions
     {
-        public static async Task SeedAsync(this IDbConnection connection)
+        public static async Task SeedAsync(this IDbConnection connection, IDbTransaction transaction)
         {
             var initData = Condition.GenerateRandomOfficeData(new DateTime(2021, 1, 1, 0, 0, 0), 10000);
-            var rows = await Condition.InsertBulkAsync(connection, initData);
+            var rows = await Condition.InsertBulkAsync(connection, transaction, initData);
             Console.WriteLine(rows);
 
             var initData2 = Condition.GenerateRandomHomeData(new DateTime(2021, 1, 1, 0, 0, 0), 10000);
-            var rows2 = await Condition.InsertBulkAsync(connection, initData2);
+            var rows2 = await Condition.InsertBulkAsync(connection, transaction, initData2);
             Console.WriteLine(rows2);
         }
     }
@@ -180,6 +180,52 @@ namespace SampleConsole
         {
             var attribute = type.GetProperty(name).GetCustomAttribute<ColumnAttribute>();
             return attribute.Name;
+        }
+    }
+
+    public static class EnumerableExtensions
+    {
+        public static IEnumerable<IEnumerable<T>> Buffer<T>(this IEnumerable<T> source, int count)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+            if (count <= 0)
+                throw new ArgumentOutOfRangeException(nameof(count));
+
+            IEnumerable<IEnumerable<T>> BufferImpl()
+            {
+                using (var enumerator = source.GetEnumerator())
+                {
+                    var list = new List<T>(count);
+                    while (enumerator.MoveNext())
+                    {
+                        list.Add(enumerator.Current);
+                        if (list.Count == count)
+                        {
+                            yield return list;
+                            list = new List<T>(count);
+                        }
+                    }
+                    if (list.Count != 0)
+                        yield return list;
+                }
+            }
+            return BufferImpl();
+        }
+    }
+
+    public static class AttributeHelper
+    {
+        public static string GetTableName<T>()
+        {
+            return ((TableAttribute)Attribute.GetCustomAttribute(typeof(T), typeof(TableAttribute))).Name;
+        }
+
+        public static string[] GetColumns<T>()
+        {
+            var props = typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty);
+            var columns = props.Select(x => ((ColumnAttribute)Attribute.GetCustomAttribute(x, typeof(ColumnAttribute))).Name).ToArray();
+            return columns;
         }
     }
 }
