@@ -5,6 +5,6 @@
     /// </summary>
     public interface IHyperTable
     {
-        (string tableName, string columnName) GetHyperTableKey();
+        (string tableName, string columnName, HyperTableAttribute attribute) GetHyperTableInfo();
     }
 }

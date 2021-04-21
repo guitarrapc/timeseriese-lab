@@ -12,13 +12,15 @@ using System.Threading.Tasks;
 
 namespace SampleConsole.Models
 {
+    [HyperTable()]
     [Keyless]
     [Table("conditions")]
     public class Condition : IHyperTable
     {
-        private static string TableName = AttributeHelper.GetTableName<Condition>();
-        private static string[] Columns = AttributeHelper.GetColumns<Condition>();
-        private static string ColumnNames = string.Join(",", Columns);
+        private static string tableName = AttributeHelper.GetTableName<Condition>();
+        private static string[] columns = AttributeHelper.GetColumns<Condition>();
+        private static string columnNames = string.Join(",", columns);
+        private static HyperTableAttribute hyperTableAttribute = AttributeHelper.GetHypertableAttribute<Condition>();
 
         [Column("time")]
         public DateTime Time { get; init; }
@@ -29,12 +31,16 @@ namespace SampleConsole.Models
         [Column("humidity")]
         public double? Humidity { get; set; }
 
-        public (string tableName, string columnName) GetHyperTableKey() => (TableName, Columns.FirstOrDefault(x => string.Equals(x, nameof(Time), StringComparison.OrdinalIgnoreCase)));
+        public (string tableName, string columnName, HyperTableAttribute attribute) GetHyperTableInfo()
+        {
+            var column = columns.FirstOrDefault(x => string.Equals(x, nameof(Time), StringComparison.OrdinalIgnoreCase));
+            return (tableName, column, hyperTableAttribute);
+        }
 
         public static async Task<Condition[]> BetweenAsync(IDbConnection connection, DateTime from, DateTime to)
         {
             var results = await connection.QueryAsync<Condition>(
-                $@"SELECT * FROM {TableName} WHERE {nameof(Time)} between @from AND @to",
+                $@"SELECT * FROM {tableName} WHERE {nameof(Time)} between @from AND @to",
                 new { from, to });
             return results.ToArray();
         }
@@ -42,7 +48,7 @@ namespace SampleConsole.Models
         public static async Task<int> InsertBulkAsync(IDbConnection connection, IDbTransaction transaction, IEnumerable<Condition> values, int timeoutSec = 60)
         {
             var rows = await connection.ExecuteAsync(
-                @$"INSERT INTO {TableName} ({ColumnNames}) VALUES (@Time, @Location, @Temperature, @Humidity);"
+                @$"INSERT INTO {tableName} ({columnNames}) VALUES (@Time, @Location, @Temperature, @Humidity);"
                 , values, transaction, timeoutSec);
             return rows;
         }
@@ -51,7 +57,7 @@ namespace SampleConsole.Models
         {
             // COPY not support Nullable<T>
             // https://github.com/npgsql/npgsql/issues/1965
-            using var writer = connection.BeginBinaryImport($"COPY {TableName} ({ColumnNames}) FROM STDIN (FORMAT BINARY)");
+            using var writer = connection.BeginBinaryImport($"COPY {tableName} ({columnNames}) FROM STDIN (FORMAT BINARY)");
             foreach (var value in values)
             {
                 await writer.StartRowAsync(ct);

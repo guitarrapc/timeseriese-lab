@@ -10,7 +10,7 @@ using SampleConsole.Data;
 namespace SampleConsole.Migrations
 {
     [DbContext(typeof(TimescaleDbContext))]
-    [Migration("20210421184213_InitialCreate")]
+    [Migration("20210421190030_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

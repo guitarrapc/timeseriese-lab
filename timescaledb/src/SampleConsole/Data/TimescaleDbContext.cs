@@ -10,11 +10,9 @@ using SampleConsole.Data;
 using SampleConsole.Models;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace SampleConsole.Data
 {
@@ -50,24 +48,24 @@ namespace SampleConsole.Data
     /// </summary>
     public class TimescaledbMigrationOperationGenerator : CSharpMigrationOperationGenerator
     {
-        private readonly Dictionary<string, (string table, string key)> hyperTables;
+        private readonly Dictionary<string, (string table, string key, HyperTableAttribute attribute)> hyperTables;
 
         public TimescaledbMigrationOperationGenerator(CSharpMigrationOperationGeneratorDependencies dependencies) : base(dependencies)
         {
             hyperTables = Assembly.GetExecutingAssembly().GetTypes()
                 .Where(x => x.GetInterfaces().Contains(typeof(IHyperTable)))
                 .Select(x => Activator.CreateInstance(x) as IHyperTable)
-                .Select(x => x.GetHyperTableKey())
+                .Select(x => x.GetHyperTableInfo())
                 .ToDictionary(kv => kv.tableName, kv => kv);
         }
         protected override void Generate(CreateTableOperation operation, IndentedStringBuilder builder)
         {
             base.Generate(operation, builder);
 
-            if (hyperTables.TryGetValue(operation.Name, out var keys))
+            if (hyperTables.TryGetValue(operation.Name, out var value))
             {
                 builder.Append(";").AppendLine();
-                GenerateHyperTable(keys.table, keys.key, builder);
+                GenerateHyperTable(value.table, value.key, value.attribute, builder);
             }
         }
 
@@ -78,10 +76,11 @@ namespace SampleConsole.Data
         /// <param name="table"></param>
         /// <param name="key"></param>
         /// <param name="builder"></param>
-        private void GenerateHyperTable(string table, string key, IndentedStringBuilder builder)
+        private void GenerateHyperTable(string table, string key, HyperTableAttribute attribute, IndentedStringBuilder builder)
         {
             Console.WriteLine($"Creating hypertable migration query for table. table {table}, key {key}");
-            builder.Append(@$"migrationBuilder.Sql(""SELECT create_hypertable('{table}', '{key}')"")");
+            var chunkTimeInterval = attribute.ChunkTimeInterval != 0 ? $", chunk_time_interval => {attribute.ChunkTimeInterval}" : "";
+            builder.Append(@$"migrationBuilder.Sql(""SELECT create_hypertable('{table}', '{key}'{chunkTimeInterval})"")");
         }
     }
     /// <summary>
@@ -144,75 +143,6 @@ namespace SampleConsole
         {
             services.AddSingleton<TimeScaleDbConnection>(new TimeScaleDbConnection(configuration));
             return services;
-        }
-    }
-
-    public static class IDbConnectionExtensions
-    {
-        public static async Task SeedAsync(this IDbConnection connection, IDbTransaction transaction)
-        {
-            var initData = Condition.GenerateRandomOfficeData(new DateTime(2021, 1, 1, 0, 0, 0), 10000);
-            var rows = await Condition.InsertBulkAsync(connection, transaction, initData);
-            Console.WriteLine(rows);
-
-            var initData2 = Condition.GenerateRandomHomeData(new DateTime(2021, 1, 1, 0, 0, 0), 10000);
-            var rows2 = await Condition.InsertBulkAsync(connection, transaction, initData2);
-            Console.WriteLine(rows2);
-        }
-    }
-
-    public static class AttributeUtilities
-    {
-        public static string GetColumnName(Type type, string name)
-        {
-            var attribute = type.GetProperty(name).GetCustomAttribute<ColumnAttribute>();
-            return attribute.Name;
-        }
-    }
-
-    public static class EnumerableExtensions
-    {
-        public static IEnumerable<IEnumerable<T>> Buffer<T>(this IEnumerable<T> source, int count)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (count <= 0)
-                throw new ArgumentOutOfRangeException(nameof(count));
-
-            IEnumerable<IEnumerable<T>> BufferImpl()
-            {
-                using (var enumerator = source.GetEnumerator())
-                {
-                    var list = new List<T>(count);
-                    while (enumerator.MoveNext())
-                    {
-                        list.Add(enumerator.Current);
-                        if (list.Count == count)
-                        {
-                            yield return list;
-                            list = new List<T>(count);
-                        }
-                    }
-                    if (list.Count != 0)
-                        yield return list;
-                }
-            }
-            return BufferImpl();
-        }
-    }
-
-    public static class AttributeHelper
-    {
-        public static string GetTableName<T>()
-        {
-            return ((TableAttribute)Attribute.GetCustomAttribute(typeof(T), typeof(TableAttribute))).Name;
-        }
-
-        public static string[] GetColumns<T>()
-        {
-            var props = typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty);
-            var columns = props.Select(x => ((ColumnAttribute)Attribute.GetCustomAttribute(x, typeof(ColumnAttribute))).Name).ToArray();
-            return columns;
         }
     }
 }

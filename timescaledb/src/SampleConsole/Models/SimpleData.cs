@@ -9,13 +9,15 @@ using System.Threading.Tasks;
 
 namespace SampleConsole.Models
 {
+    [HyperTable(chunkTimeInterval: 100000)]
     [Keyless]
     [Table("simpledata")]
     public class SimpleData : IHyperTable
     {
-        private static string TableName = AttributeHelper.GetTableName<SimpleData>();
-        private static string[] Columns = AttributeHelper.GetColumns<SimpleData>();
-        private static string ColumnNames = string.Join(",", Columns);
+        private static string tableName = AttributeHelper.GetTableName<SimpleData>();
+        private static string[] columns = AttributeHelper.GetColumns<SimpleData>();
+        private static string columnNames = string.Join(",", columns);
+        private static HyperTableAttribute hyperTableAttribute = AttributeHelper.GetHypertableAttribute<SimpleData>();
 
         [Column("id")]
         public int Id { get; init; }
@@ -26,11 +28,15 @@ namespace SampleConsole.Models
         [Column("name")]
         public string Name { get; init; }
 
-        public (string tableName, string columnName) GetHyperTableKey() => (TableName, Columns.FirstOrDefault(x => string.Equals(x, nameof(Id), StringComparison.OrdinalIgnoreCase)));
+        public (string tableName, string columnName, HyperTableAttribute attribute) GetHyperTableInfo()
+        {
+            var column = columns.FirstOrDefault(x => string.Equals(x, nameof(Id), StringComparison.OrdinalIgnoreCase));
+            return (tableName, column, hyperTableAttribute);
+        }
 
         public static async Task<ulong> CopyAsync(NpgsqlConnection connection, IEnumerable<SimpleData> values, CancellationToken ct)
         {
-            using var writer = connection.BeginBinaryImport($"COPY {TableName} ({ColumnNames}) FROM STDIN (FORMAT BINARY)");
+            using var writer = connection.BeginBinaryImport($"COPY {tableName} ({columnNames}) FROM STDIN (FORMAT BINARY)");
             foreach (var value in values)
             {
                 await writer.StartRowAsync(ct);

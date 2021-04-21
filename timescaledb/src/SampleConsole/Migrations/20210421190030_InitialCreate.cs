@@ -33,7 +33,7 @@ namespace SampleConsole.Migrations
                 constraints: table =>
                 {
                 });
-            migrationBuilder.Sql("SELECT create_hypertable('simpledata', 'id')");
+            migrationBuilder.Sql("SELECT create_hypertable('simpledata', 'id', chunk_time_interval => 100000)");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

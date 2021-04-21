@@ -15,7 +15,7 @@ dotnet run -- Runner migrate
 or
 
 dotnet ef database update
-dotnet run -- Runner seed
+dotnet run -- Runner seedcopy
 ```
 
 add random test data for past 100sec.
@@ -102,6 +102,17 @@ dotnet ef database drop --force
 
 ### Disk Usage
 
+**prepare**
+
+```shell
+dotnet run -- Runner migrate
+dotnet run -- Runner sameseedcopy -count 1000000
+dotnet run -- Runner sameseedcopy -count 9000000
+dotnet run -- Runner sameseedcopy -count 90000000
+```
+
+**check volume size**
+
 ```shell
 docker-compose exec timescaledb du -hs /var/lib/postgresql/data/
 ```
@@ -110,12 +121,22 @@ docker-compose exec timescaledb du -hs /var/lib/postgresql/data/
 SELECT pg_size_pretty(pg_database_size('timeseriese'))
 ```
 
+same data records.
+
+line of insert | sql | df
+---- | ---- | ----
+1,000,000 | 77 MB | 279.6M
+10,000,000 | 678 MB | 1.7G
+100,000,000 | 
+
+random data records.
+
 line of insert | sql | df
 ---- | ---- | ----
 Initial | 9165 kB | 51.3M
-10,000 | 10 MB | 52.4M (+1.1M)
-100,000 | 17 MB (+7 MB)| 75.7M (+13.3M)
-1,000,000 | 90 MB (+MB)| 228.0M (+M)
-10,000,000 | 90 MB (+MB)| 228.0M (+M)
-
+10,000 | 10 MB | 52.4M
+100,000 | 17 MB | 75.7M
+1,000,000 | 90 MB | 228.0M
+10,000,000 | 
+100,000,000 | 
 

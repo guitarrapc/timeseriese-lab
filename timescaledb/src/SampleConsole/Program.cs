@@ -130,7 +130,7 @@ namespace SampleConsole
         {
             await _dbContext.Database.MigrateAsync(Context.CancellationToken);
             //await SeedCopy(parallel, count);
-            await SizeSeedCopy(parallel, count);
+            //await SameSeedCopy(parallel, count);
         }
 
         [Command("seed")]
@@ -228,8 +228,8 @@ namespace SampleConsole
             Console.WriteLine($"Complete seed database. plan {count}, completed {completed}, duration {sw.Elapsed.TotalSeconds}sec");
         }
 
-        [Command("sizeseedcopy")]
-        public async Task SizeSeedCopy(int parallel = 100, int count = 10000)
+        [Command("sameseedcopy")]
+        public async Task SameSeedCopy(int parallel = 100, int count = 10000)
         {
             Console.WriteLine($"Begin seed copy database. {count} rows, parallel {parallel}");
             var size = count;
