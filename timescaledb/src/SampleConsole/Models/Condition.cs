@@ -31,6 +31,7 @@ namespace SampleConsole.Models
         [Column("humidity")]
         public double? Humidity { get; set; }
 
+        public bool IsHyperTable() => hyperTableAttribute != null;
         public (string tableName, string columnName, HyperTableAttribute attribute) GetHyperTableInfo()
         {
             var column = columns.FirstOrDefault(x => string.Equals(x, nameof(Time), StringComparison.OrdinalIgnoreCase));

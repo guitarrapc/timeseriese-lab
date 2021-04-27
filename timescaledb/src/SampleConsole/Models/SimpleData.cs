@@ -28,6 +28,7 @@ namespace SampleConsole.Models
         [Column("name")]
         public string Name { get; init; }
 
+        public bool IsHyperTable() => hyperTableAttribute != null;
         public (string tableName, string columnName, HyperTableAttribute attribute) GetHyperTableInfo()
         {
             var column = columns.FirstOrDefault(x => string.Equals(x, nameof(Id), StringComparison.OrdinalIgnoreCase));

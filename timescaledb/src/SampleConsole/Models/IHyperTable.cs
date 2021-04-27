@@ -5,6 +5,7 @@
     /// </summary>
     public interface IHyperTable
     {
+        public bool IsHyperTable();
         (string tableName, string columnName, HyperTableAttribute attribute) GetHyperTableInfo();
     }
 }

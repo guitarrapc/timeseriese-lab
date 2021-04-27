@@ -56,6 +56,7 @@ namespace SampleConsole.Data
             hyperTables = Assembly.GetExecutingAssembly().GetTypes()
                 .Where(x => x.GetInterfaces().Contains(typeof(IHyperTable)))
                 .Select(x => Activator.CreateInstance(x) as IHyperTable)
+                .Where(x => x.IsHyperTable())
                 .Select(x => x.GetHyperTableInfo())
                 .ToDictionary(kv => kv.tableName, kv => kv);
         }

@@ -105,6 +105,15 @@ dotnet ef database drop --force
 
 **prepare**
 
+random data.
+
+```shell
+dotnet run -- Runner migrate
+dotnet run -- Runner seedcopy -count 1000000
+dotnet run -- Runner seedcopy -count 9000000
+dotnet run -- Runner seedcopy -count 90000000
+```
+
 double base data.
 
 ```shell
@@ -141,6 +150,14 @@ line of insert | sql | df
 1,000,000 | 77 MB | 279.6M
 10,000,000 | 678 MB | 1.7G
 100,000,000 | 6693 MB | 7.6G 
+
+simple same data records.
+
+line of insert | sql | df
+---- | ---- | ----
+1,000,000 | 68 MB | 254.6M
+10,000,000 | 600 MB | 1.6G
+100,000,000 | 5918 MB | 6.8G
 
 random data records.
 
