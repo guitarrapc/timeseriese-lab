@@ -34,6 +34,20 @@ namespace SampleConsole.Migrations
                 {
                 });
             migrationBuilder.Sql("SELECT create_hypertable('simpledata', 'id', chunk_time_interval => 100000)");
+
+            migrationBuilder.CreateTable(
+                name: "simplesmalldata",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false),
+                    temperature = table.Column<float>(type: "real", nullable: false),
+                    humidity = table.Column<float>(type: "real", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                });
+            migrationBuilder.Sql("SELECT create_hypertable('simplesmalldata', 'id', chunk_time_interval => 100000)");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
@@ -43,6 +57,9 @@ namespace SampleConsole.Migrations
 
             migrationBuilder.DropTable(
                 name: "simpledata");
+
+            migrationBuilder.DropTable(
+                name: "simplesmalldata");
         }
     }
 }

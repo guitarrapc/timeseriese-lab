@@ -10,7 +10,7 @@ using SampleConsole.Data;
 namespace SampleConsole.Migrations
 {
     [DbContext(typeof(TimescaleDbContext))]
-    [Migration("20210421190030_InitialCreate")]
+    [Migration("20210427015445_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -61,6 +61,27 @@ namespace SampleConsole.Migrations
                         .HasColumnName("temperature");
 
                     b.ToTable("simpledata");
+                });
+
+            modelBuilder.Entity("SampleConsole.Models.SimpleSmallData", b =>
+                {
+                    b.Property<float>("Humidity")
+                        .HasColumnType("real")
+                        .HasColumnName("humidity");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<float>("Temperature")
+                        .HasColumnType("real")
+                        .HasColumnName("temperature");
+
+                    b.ToTable("simplesmalldata");
                 });
 #pragma warning restore 612, 618
         }

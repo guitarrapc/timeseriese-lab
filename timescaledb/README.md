@@ -11,6 +11,7 @@ migrate & seed initial data.
 ```shell
 cd src/SampleConsole/
 dotnet run -- Runner migrate
+dotnet run -- Runner seedcopy
 
 or
 
@@ -104,12 +105,24 @@ dotnet ef database drop --force
 
 **prepare**
 
+double base data.
+
 ```shell
 dotnet run -- Runner migrate
 dotnet run -- Runner sameseedcopy -count 1000000
 dotnet run -- Runner sameseedcopy -count 9000000
 dotnet run -- Runner sameseedcopy -count 90000000
 ```
+
+float base data.
+
+```shell
+dotnet run -- Runner migrate
+dotnet run -- Runner smallsameseedcopy -count 1000000
+dotnet run -- Runner smallsameseedcopy -count 9000000
+dotnet run -- Runner smallsameseedcopy -count 90000000
+```
+
 
 **check volume size**
 
@@ -127,7 +140,7 @@ line of insert | sql | df
 ---- | ---- | ----
 1,000,000 | 77 MB | 279.6M
 10,000,000 | 678 MB | 1.7G
-100,000,000 | 
+100,000,000 | 6693 MB | 7.6G 
 
 random data records.
 
