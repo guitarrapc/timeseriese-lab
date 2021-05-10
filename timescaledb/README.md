@@ -114,7 +114,7 @@ dotnet run -- Runner seedcopy -count 9000000
 dotnet run -- Runner seedcopy -count 90000000
 ```
 
-double base data.
+double base same data.
 
 ```shell
 dotnet run -- Runner migrate
@@ -123,7 +123,7 @@ dotnet run -- Runner sameseedcopy -count 9000000
 dotnet run -- Runner sameseedcopy -count 90000000
 ```
 
-float base data.
+float base same data.
 
 ```shell
 dotnet run -- Runner migrate
@@ -143,7 +143,44 @@ docker-compose exec timescaledb du -hs /var/lib/postgresql/data/
 SELECT pg_size_pretty(pg_database_size('timeseriese'))
 ```
 
-same data records.
+**hypertable disabled**
+
+double base random data records.
+
+line of insert | sql | df
+---- | ---- | ----
+1,000,000 | 74 MB | 164.6M
+10,000,000 | 660 MB | 1.1G
+100,000,000 | 6521 MB | 7.4G
+
+double base same data records.
+
+line of insert | sql | df
+---- | ---- | ----
+1,000,000 | 67 MB | 157.1M
+10,000,000 | 584 MB | 1.0G
+100,000,000 | 5755 MB | 6.7G
+
+float base same data records.
+
+line of insert | sql | df
+---- | ---- | ----
+1,000,000 | 59 MB | 133.3M
+10,000,000 | 507 MB | 837.2M
+100,000,000 | 4987 MB | 5.9G
+
+
+**hypertable enabled**
+
+double base random data records.
+
+line of insert | sql | df
+---- | ---- | ----
+1,000,000 | 114 MB | 332.1M
+10,000,000 | 2.2G | 1008 MB
+100,000,000 | 9335 MB | 10.2G
+
+double base same data records.
 
 line of insert | sql | df
 ---- | ---- | ----
@@ -151,7 +188,7 @@ line of insert | sql | df
 10,000,000 | 678 MB | 1.7G
 100,000,000 | 6693 MB | 7.6G 
 
-simple same data records.
+float base same data records.
 
 line of insert | sql | df
 ---- | ---- | ----
@@ -159,14 +196,5 @@ line of insert | sql | df
 10,000,000 | 600 MB | 1.6G
 100,000,000 | 5918 MB | 6.8G
 
-random data records.
 
-line of insert | sql | df
----- | ---- | ----
-Initial | 9165 kB | 51.3M
-10,000 | 10 MB | 52.4M
-100,000 | 17 MB | 75.7M
-1,000,000 | 90 MB | 228.0M
-10,000,000 | 
-100,000,000 | 
 
