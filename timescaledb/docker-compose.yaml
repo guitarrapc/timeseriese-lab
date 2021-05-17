@@ -19,6 +19,8 @@ services:
       - postgresql:/var/lib/postgresql/data
 
   pgadmin:
+    depends_on:
+      - timescaledb
     image: dpage/pgadmin4:5.2
     ports:
       - 8080:80
@@ -27,10 +29,10 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin
     volumes:
       - pgadmin:/var/lib/pgadmin
-    depends_on:
-      - timescaledb
 
   grafana:
+    depends_on:
+      - timescaledb
     image: grafana/grafana:7.5.2-ubuntu
     ports:
       - 3000:3000
@@ -38,5 +40,3 @@ services:
       - ./docker/grafana/provisioning:/etc/grafana/provisioning
       - ./docker/grafana/dashboards:/etc/grafana/dashboards
       - grafana:/var/lib/grafana
-    depends_on:
-      - timescaledb
