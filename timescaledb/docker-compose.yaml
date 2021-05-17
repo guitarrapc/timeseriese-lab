@@ -13,7 +13,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=postgres
+      - POSTGRES_DB=timeseries
       - TS_TUNE_MAX_CONNS=1000
     volumes:
       - postgresql:/var/lib/postgresql/data

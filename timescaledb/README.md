@@ -3,7 +3,11 @@
 up containers.
 
 ```shell
+# single node timescaledb
 docker-compose up -d
+
+# if you want launch as multi-node timescaledb use below.
+docker-compose -f docker-compose.yaml -f docker-compose.multi.yaml up -d
 ```
 
 migrate & seed initial data.
@@ -11,12 +15,12 @@ migrate & seed initial data.
 ```shell
 cd src/SampleConsole/
 dotnet run -- Runner migrate
-dotnet run -- Runner seedcopy
+dotnet run -- Runner seedsensordata
 
 or
 
 dotnet ef database update
-dotnet run -- Runner seedcopy
+dotnet run -- Runner seedsensordata
 ```
 
 add random test data for past 100sec.
@@ -65,7 +69,7 @@ http://localhost:3000
 
 * user/pass: `admin`/`admin`
 
-**postgresql**
+**timescaledb**
 
 localhost:5432
 or
@@ -140,7 +144,7 @@ docker-compose exec timescaledb du -hs /var/lib/postgresql/data/
 ```
 
 ```sql
-SELECT pg_size_pretty(pg_database_size('postgres'))
+SELECT pg_size_pretty(pg_database_size('timeseries'))
 ```
 
 **hypertable disabled**

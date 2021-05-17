@@ -21,7 +21,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=postgres
+      - POSTGRES_DB=timeseries
     ports:
       - 5433:5432
     volumes:
@@ -37,7 +37,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=postgres
+      - POSTGRES_DB=timeseries
     ports:
       - 5434:5432
     volumes:
@@ -45,3 +45,4 @@ services:
       - ./docker/postgresql/docker-entrypoint-initdb.d/990_trustall.sh:/docker-entrypoint-initdb.d/990_trustall.sh
       - ./docker/postgresql/docker-entrypoint-initdb.d/991_unsafeboost.sh:/docker-entrypoint-initdb.d/991_unsafeboost.sh
       - ./docker/postgresql/docker-entrypoint-initdb.d/993_init-datanode.sh:/docker-entrypoint-initdb.d/993_init-datanode.sh
+      # - ./docker/postgresql/docker-entrypoint-initdb.d/995_extensions.sh:/docker-entrypoint-initdb.d/995_extensions.sh
