@@ -4,10 +4,10 @@ up containers.
 
 ```shell
 # single node timescaledb
-docker-compose up -d
+run
 
 # if you want launch as multi-node timescaledb use below.
-docker-compose -f docker-compose.yaml -f docker-compose.multi.yaml up -d
+multi
 ```
 
 migrate & seed initial data.
@@ -46,13 +46,13 @@ dotnet run -- Runner test -location オフィス -temperature 20.1 -humidity 50.
 down all containers. (keep data)
 
 ```shell
-docker-compose down --remove-orphans --volumes
+down
 ```
 
 down all containers. (initialize data)
 
 ```shell
-docker-compose down --remove-orphans
+init
 ```
 
 ## Access
