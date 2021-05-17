@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -12,15 +11,15 @@ using System.Threading.Tasks;
 
 namespace SampleConsole.Models
 {
-    [HyperTable()]
+    [Hypertable(tableName, "time")]
+    [Table(tableName)]
     [Keyless]
-    [Table("conditions")]
-    public class Condition : IHyperTable
+    [Index(nameof(Time), Name = "conditions_time_idx")]
+    public class Condition
     {
-        private static string tableName = AttributeHelper.GetTableName<Condition>();
-        private static string[] columns = AttributeHelper.GetColumns<Condition>();
+        private const string tableName = "conditions";
+        private static string[] columns = AttributeEx.GetColumns<Condition>();
         private static string columnNames = string.Join(",", columns);
-        private static HyperTableAttribute hyperTableAttribute = AttributeHelper.GetHypertableAttribute<Condition>();
 
         [Column("time")]
         public DateTime Time { get; init; }
@@ -30,13 +29,6 @@ namespace SampleConsole.Models
         public double? Temperature { get; set; }
         [Column("humidity")]
         public double? Humidity { get; set; }
-
-        public bool IsHyperTable() => hyperTableAttribute != null;
-        public (string tableName, string columnName, HyperTableAttribute attribute) GetHyperTableInfo()
-        {
-            var column = columns.FirstOrDefault(x => string.Equals(x, nameof(Time), StringComparison.OrdinalIgnoreCase));
-            return (tableName, column, hyperTableAttribute);
-        }
 
         public static async Task<Condition[]> BetweenAsync(IDbConnection connection, DateTime from, DateTime to)
         {

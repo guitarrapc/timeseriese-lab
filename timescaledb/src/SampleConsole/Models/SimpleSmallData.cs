@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -9,15 +8,15 @@ using System.Threading.Tasks;
 
 namespace SampleConsole.Models
 {
-    [HyperTable(chunkTimeInterval: 100000)]
+    [Hypertable(tableName, "id", chunkTimeInterval: 100000)]
+    [Table(tableName)]
     [Keyless]
-    [Table("simplesmalldata")]
-    public class SimpleSmallData : IHyperTable
+    [Index(nameof(Id), Name = "conditions_id_idx")]
+    public class SimpleSmallData
     {
-        private static string tableName = AttributeHelper.GetTableName<SimpleSmallData>();
-        private static string[] columns = AttributeHelper.GetColumns<SimpleSmallData>();
+        private const string tableName = "simplesmalldata";
+        private static string[] columns = AttributeEx.GetColumns<SimpleSmallData>();
         private static string columnNames = string.Join(",", columns);
-        private static HyperTableAttribute hyperTableAttribute = AttributeHelper.GetHypertableAttribute<SimpleSmallData>();
 
         [Column("id")]
         public int Id { get; init; }
@@ -27,13 +26,6 @@ namespace SampleConsole.Models
         public float Humidity { get; init; }
         [Column("name")]
         public string Name { get; init; }
-
-        public bool IsHyperTable() => hyperTableAttribute != null;
-        public (string tableName, string columnName, HyperTableAttribute attribute) GetHyperTableInfo()
-        {
-            var column = columns.FirstOrDefault(x => string.Equals(x, nameof(Id), StringComparison.OrdinalIgnoreCase));
-            return (tableName, column, hyperTableAttribute);
-        }
 
         public static async Task<ulong> CopyAsync(NpgsqlConnection connection, IEnumerable<SimpleSmallData> values, CancellationToken ct)
         {

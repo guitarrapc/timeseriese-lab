@@ -40,6 +40,7 @@ namespace SampleConsole.Data
         public DbSet<Condition> Conditions { get; set; }
         public DbSet<SimpleData> SimpleData { get; set; }
         public DbSet<SimpleSmallData> SimpleSmallDatas { get; set; }
+        public DbSet<SensorData> SensorData { get; set; }
     }
 
     /// <summary>
@@ -49,28 +50,50 @@ namespace SampleConsole.Data
     /// </summary>
     public class TimescaledbMigrationOperationGenerator : CSharpMigrationOperationGenerator
     {
-        private readonly Dictionary<string, (string table, string key, HyperTableAttribute attribute)> hyperTables;
+        private readonly Dictionary<string, HypertableAttribute> hyperTables;
+        private readonly Dictionary<string, DistributedHypertableAttribute> distributedHyperTables;
 
         public TimescaledbMigrationOperationGenerator(CSharpMigrationOperationGeneratorDependencies dependencies) : base(dependencies)
         {
             hyperTables = Assembly.GetExecutingAssembly().GetTypes()
-                .Where(x => x.GetInterfaces().Contains(typeof(IHyperTable)))
-                .Select(x => Activator.CreateInstance(x) as IHyperTable)
-                .Where(x => x.IsHyperTable())
-                .Select(x => x.GetHyperTableInfo())
-                .ToDictionary(kv => kv.tableName, kv => kv);
+                .Select(x => x.GetCustomAttribute<HypertableAttribute>(true))
+                .Where(x => x != null)
+                .ToDictionary(kv => kv.TableName, kv => kv);
+            distributedHyperTables = Assembly.GetExecutingAssembly().GetTypes()
+                .Select(x => x.GetCustomAttribute<DistributedHypertableAttribute>(true))
+                .Where(x => x != null)
+                .ToDictionary(kv => kv.TableName, kv => kv);
         }
         protected override void Generate(CreateTableOperation operation, IndentedStringBuilder builder)
         {
             base.Generate(operation, builder);
 
+            if (distributedHyperTables.TryGetValue(operation.Name, out var dvalue))
+            {
+                builder.Append(";").AppendLine();
+                GenerateDistributedHyperTable(dvalue, builder);
+            }
             if (hyperTables.TryGetValue(operation.Name, out var value))
             {
                 builder.Append(";").AppendLine();
-                GenerateHyperTable(value.table, value.key, value.attribute, builder);
+                GenerateHyperTable(value, builder);
             }
         }
 
+        /// <summary>
+        /// Auto execute create_hypertable query when Create Table executed.
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="key"></param>
+        /// <param name="builder"></param>
+        private void GenerateDistributedHyperTable(DistributedHypertableAttribute attribute, IndentedStringBuilder builder)
+        {
+            // ref: https://docs.timescale.com/api/latest/distributed-hypertables/create_distributed_hypertable/
+            // SELECT create_distributed_hypertable('TABLE', 'time', 'sensor_id')
+            Console.WriteLine($"Creating distributed hypertable for table. table: {attribute.TableName}, timeColumn {attribute.TimeColumn}");
+            var chunkTimeInterval = attribute.ChunkTimeInterval != 0 ? $", chunk_time_interval => {attribute.ChunkTimeInterval}" : "";
+            builder.Append(@$"migrationBuilder.Sql(""SELECT create_distributed_hypertable('{attribute.TableName}', '{attribute.TimeColumn}', '{attribute.PartitioningColumn}'{chunkTimeInterval})"")");
+        }
         /// <summary>
         /// Auto execute create_hypertable query when Create Table executed.
         /// generated sample: migrationBuilder.Sql("SELECT create_hypertable('TABLE', 'time')");
@@ -78,11 +101,13 @@ namespace SampleConsole.Data
         /// <param name="table"></param>
         /// <param name="key"></param>
         /// <param name="builder"></param>
-        private void GenerateHyperTable(string table, string key, HyperTableAttribute attribute, IndentedStringBuilder builder)
+        private void GenerateHyperTable(HypertableAttribute attribute, IndentedStringBuilder builder)
         {
-            Console.WriteLine($"Creating hypertable migration query for table. table {table}, key {key}");
+            // ref: https://docs.timescale.com/api/latest/hypertable/create_hypertable/
+            // SELECT create_hypertable('TABLE', 'time')
+            Console.WriteLine($"Creating hypertable migration query for table. table {attribute.TableName}, timeColumn {attribute.TimeColumn}");
             var chunkTimeInterval = attribute.ChunkTimeInterval != 0 ? $", chunk_time_interval => {attribute.ChunkTimeInterval}" : "";
-            builder.Append(@$"migrationBuilder.Sql(""SELECT create_hypertable('{table}', '{key}'{chunkTimeInterval})"")");
+            builder.Append(@$"migrationBuilder.Sql(""SELECT create_hypertable('{attribute.TableName}', '{attribute.TimeColumn}'{chunkTimeInterval})"")");
         }
     }
     /// <summary>
@@ -104,6 +129,8 @@ namespace SampleConsole.Data
         {
             var configBuilder = new ConfigurationBuilder();
             configBuilder.AddJsonFile("appsettings.json");
+            configBuilder.AddJsonFile("appsettings.Production.json", true);
+            configBuilder.AddJsonFile("appsettings.Development.json", true);
             _config = configBuilder.Build();
         }
         public TimescaleDbContext CreateDbContext(string[] args)

@@ -22,6 +22,20 @@ namespace SampleConsole.Migrations
             migrationBuilder.Sql("SELECT create_hypertable('conditions', 'time')");
 
             migrationBuilder.CreateTable(
+                name: "sensor_data",
+                columns: table => new
+                {
+                    time = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    sensor_id = table.Column<int>(type: "integer", nullable: true),
+                    temperature = table.Column<double>(type: "double precision", nullable: true),
+                    cpu = table.Column<double>(type: "double precision", nullable: true)
+                },
+                constraints: table =>
+                {
+                });
+            migrationBuilder.Sql("SELECT create_distributed_hypertable('sensor_data', 'time', 'sensor_id')");
+
+            migrationBuilder.CreateTable(
                 name: "simpledata",
                 columns: table => new
                 {
@@ -48,12 +62,40 @@ namespace SampleConsole.Migrations
                 {
                 });
             migrationBuilder.Sql("SELECT create_hypertable('simplesmalldata', 'id', chunk_time_interval => 100000)");
+
+            migrationBuilder.CreateIndex(
+                name: "conditions_time_idx",
+                table: "conditions",
+                column: "time");
+
+            migrationBuilder.CreateIndex(
+                name: "sensor_data_sensor_id_time_idx",
+                table: "sensor_data",
+                columns: new[] { "sensor_id", "time" });
+
+            migrationBuilder.CreateIndex(
+                name: "sensor_data_time_idx",
+                table: "sensor_data",
+                column: "time");
+
+            migrationBuilder.CreateIndex(
+                name: "conditions_id_idx",
+                table: "simpledata",
+                column: "id");
+
+            migrationBuilder.CreateIndex(
+                name: "conditions_id_idx",
+                table: "simplesmalldata",
+                column: "id");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "conditions");
+
+            migrationBuilder.DropTable(
+                name: "sensor_data");
 
             migrationBuilder.DropTable(
                 name: "simpledata");

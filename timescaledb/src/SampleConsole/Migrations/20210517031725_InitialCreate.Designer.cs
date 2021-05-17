@@ -10,7 +10,7 @@ using SampleConsole.Data;
 namespace SampleConsole.Migrations
 {
     [DbContext(typeof(TimescaleDbContext))]
-    [Migration("20210427062307_InitialCreate")]
+    [Migration("20210517031725_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -39,7 +39,34 @@ namespace SampleConsole.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("time");
 
+                    b.HasIndex(new[] { "Time" }, "conditions_time_idx");
+
                     b.ToTable("conditions");
+                });
+
+            modelBuilder.Entity("SampleConsole.Models.SensorData", b =>
+                {
+                    b.Property<double?>("Cpu")
+                        .HasColumnType("double precision")
+                        .HasColumnName("cpu");
+
+                    b.Property<int?>("SensorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("sensor_id");
+
+                    b.Property<double?>("Temperature")
+                        .HasColumnType("double precision")
+                        .HasColumnName("temperature");
+
+                    b.Property<DateTime>("Time")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("time");
+
+                    b.HasIndex(new[] { "SensorId", "Time" }, "sensor_data_sensor_id_time_idx");
+
+                    b.HasIndex(new[] { "Time" }, "sensor_data_time_idx");
+
+                    b.ToTable("sensor_data");
                 });
 
             modelBuilder.Entity("SampleConsole.Models.SimpleData", b =>
@@ -59,6 +86,8 @@ namespace SampleConsole.Migrations
                     b.Property<double>("Temperature")
                         .HasColumnType("double precision")
                         .HasColumnName("temperature");
+
+                    b.HasIndex(new[] { "Id" }, "conditions_id_idx");
 
                     b.ToTable("simpledata");
                 });
@@ -80,6 +109,8 @@ namespace SampleConsole.Migrations
                     b.Property<float>("Temperature")
                         .HasColumnType("real")
                         .HasColumnName("temperature");
+
+                    b.HasIndex(new[] { "Id" }, "conditions_id_idx");
 
                     b.ToTable("simplesmalldata");
                 });

@@ -9,15 +9,15 @@ using System.Threading.Tasks;
 
 namespace SampleConsole.Models
 {
-    [HyperTable(chunkTimeInterval: 100000)]
+    [Hypertable(tableName, "id", chunkTimeInterval: 100000)]
+    [Table(tableName)]
     [Keyless]
-    [Table("simpledata")]
-    public class SimpleData : IHyperTable
+    [Index(nameof(Id), Name = "conditions_id_idx")]
+    public class SimpleData
     {
-        private static string tableName = AttributeHelper.GetTableName<SimpleData>();
-        private static string[] columns = AttributeHelper.GetColumns<SimpleData>();
+        private const string tableName = "simpledata";
+        private static string[] columns = AttributeEx.GetColumns<SimpleData>();
         private static string columnNames = string.Join(",", columns);
-        private static HyperTableAttribute hyperTableAttribute = AttributeHelper.GetHypertableAttribute<SimpleData>();
 
         [Column("id")]
         public int Id { get; init; }
@@ -27,13 +27,6 @@ namespace SampleConsole.Models
         public double Humidity { get; init; }
         [Column("name")]
         public string Name { get; init; }
-
-        public bool IsHyperTable() => hyperTableAttribute != null;
-        public (string tableName, string columnName, HyperTableAttribute attribute) GetHyperTableInfo()
-        {
-            var column = columns.FirstOrDefault(x => string.Equals(x, nameof(Id), StringComparison.OrdinalIgnoreCase));
-            return (tableName, column, hyperTableAttribute);
-        }
 
         public static async Task<ulong> CopyAsync(NpgsqlConnection connection, IEnumerable<SimpleData> values, CancellationToken ct)
         {
