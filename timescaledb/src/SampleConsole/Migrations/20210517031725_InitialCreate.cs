@@ -62,31 +62,6 @@ namespace SampleConsole.Migrations
                 {
                 });
             migrationBuilder.Sql("SELECT create_hypertable('simplesmalldata', 'id', chunk_time_interval => 100000)");
-
-            migrationBuilder.CreateIndex(
-                name: "conditions_time_idx",
-                table: "conditions",
-                column: "time");
-
-            migrationBuilder.CreateIndex(
-                name: "sensor_data_sensor_id_time_idx",
-                table: "sensor_data",
-                columns: new[] { "sensor_id", "time" });
-
-            migrationBuilder.CreateIndex(
-                name: "sensor_data_time_idx",
-                table: "sensor_data",
-                column: "time");
-
-            migrationBuilder.CreateIndex(
-                name: "conditions_id_idx",
-                table: "simpledata",
-                column: "id");
-
-            migrationBuilder.CreateIndex(
-                name: "conditions_id_idx",
-                table: "simplesmalldata",
-                column: "id");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

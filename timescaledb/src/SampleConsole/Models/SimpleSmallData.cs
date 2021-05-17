@@ -11,7 +11,7 @@ namespace SampleConsole.Models
     [Hypertable(tableName, "id", chunkTimeInterval: 100000)]
     [Table(tableName)]
     [Keyless]
-    [Index(nameof(Id), Name = "conditions_id_idx")]
+    // auto gen: [Index(nameof(Id), Name = "conditions_id_idx")]
     public class SimpleSmallData
     {
         private const string tableName = "simplesmalldata";

@@ -14,7 +14,7 @@ namespace SampleConsole.Models
     [Hypertable(tableName, "time")]
     [Table(tableName)]
     [Keyless]
-    [Index(nameof(Time), Name = "conditions_time_idx")]
+    // auto gen: [Index(nameof(Time), Name = "conditions_time_idx")]
     public class Condition
     {
         private const string tableName = "conditions";

@@ -13,12 +13,11 @@ namespace SampleConsole.Models
     [Table(tableName)]
     [Keyless]
     [Index(nameof(Time), Name = "sensor_data_time_idx")]
-    [Index(nameof(SensorId), nameof(Time), Name = "sensor_data_sensor_id_time_idx")]
+    // auto gen: [Index(nameof(SensorId), nameof(Time), Name = "sensor_data_sensor_id_time_idx")]
     public class SensorData
     {
         private const string tableName = "sensor_data";
         private static string[] columns = AttributeEx.GetColumns<SensorData>();
-        private static string columnNames = string.Join(",", columns);
 
         [Column("time")]
         public DateTime Time { get; init; }
@@ -31,7 +30,7 @@ namespace SampleConsole.Models
 
         public static async Task<ulong> CopyAsync(NpgsqlConnection connection, IEnumerable<SensorData> values, CancellationToken ct)
         {
-            using var writer = connection.BeginBinaryImport($"COPY {tableName} ({columnNames}) FROM STDIN (FORMAT BINARY)");
+            using var writer = connection.BeginBinaryImport($"COPY {tableName} ({string.Join(",", columns)}) FROM STDIN (FORMAT BINARY)");
             foreach (var value in values)
             {
                 await writer.StartRowAsync(ct);
