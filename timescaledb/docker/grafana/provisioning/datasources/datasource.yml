@@ -4,7 +4,7 @@ datasources:
   - name: TimescaleDb
     type: postgres
     url: timescaledb:5432
-    database: timeseriese
+    database: postgres
     user: postgres
     secureJsonData:
       password: "password"

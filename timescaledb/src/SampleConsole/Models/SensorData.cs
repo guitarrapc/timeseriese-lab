@@ -1,8 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Dapper;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,20 +45,20 @@ namespace SampleConsole.Models
             return rows;
         }
 
-        public static SensorData[] GenerateSameData(DateTime from, int dataCount)
+        public static async Task<int> InsertSampleDataAsync(IDbConnection connection, IDbTransaction transaction, int timeOutSec = 300)
         {
-            var random = new Random();
-            double temp = 20;
-            double cpu = 50;
-            var data = Enumerable.Range(1, dataCount).Select(x => new SensorData
-            {
-                Time = from.AddSeconds(x),
-                SensorId = x % 5,
-                Temperature = temp + random.Next(-5, 5),
-                Cpu = cpu + random.Next(-20, 30),
-            })
-            .ToArray();
-            return data;
+            var sql = $@"INSERT INTO {tableName}
+SELECT
+	time,
+	sensor_id,
+	random() AS cpu,
+	random() * 100 AS temperature
+FROM
+	generate_series(now() - interval '6 months', now(), interval '30 second') AS g1(time),
+	generate_series(1, 10, 1) AS g2(sensor_id);
+";
+            var rows = await connection.ExecuteAsync(sql, transaction: transaction, commandTimeout: timeOutSec);
+            return rows;
         }
     }
 }

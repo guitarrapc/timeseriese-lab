@@ -1,0 +1,47 @@
+version: "3"
+
+volumes:
+  postgresql_dn01: {}
+  postgresql_dn02: {}
+
+services:
+  timescaledb:
+    volumes:
+      - postgresql:/var/lib/postgresql/data
+      - ./docker/postgresql/docker-entrypoint-initdb.d/990_trustall.sh:/docker-entrypoint-initdb.d/990_trustall.sh
+      - ./docker/postgresql/docker-entrypoint-initdb.d/991_unsafeboost.sh:/docker-entrypoint-initdb.d/991_unsafeboost.sh
+      - ./docker/postgresql/docker-entrypoint-initdb.d/992_init-accessnode.sh:/docker-entrypoint-initdb.d/992_init-accessnode.sh
+      # - ./docker/postgresql/docker-entrypoint-initdb.d/995_extensions.sh:/docker-entrypoint-initdb.d/995_extensions.sh
+      # - ./docker/postgresql/docker-entrypoint-initdb.d/996_init_data.sh:/docker-entrypoint-initdb.d/996_init_data.sh
+      - ./data:/tmp/data
+
+  timescaledb-dn01:
+    image: timescale/timescaledb-postgis:2.2.1-pg13
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=postgres
+    ports:
+      - 5433:5432
+    volumes:
+      - postgresql_dn01:/var/lib/postgresql/data
+      - ./docker/postgresql/docker-entrypoint-initdb.d/990_trustall.sh:/docker-entrypoint-initdb.d/990_trustall.sh
+      - ./docker/postgresql/docker-entrypoint-initdb.d/991_unsafeboost.sh:/docker-entrypoint-initdb.d/991_unsafeboost.sh
+      - ./docker/postgresql/docker-entrypoint-initdb.d/993_init-datanode.sh:/docker-entrypoint-initdb.d/993_init-datanode.sh
+      # - ./docker/postgresql/docker-entrypoint-initdb.d/995_extensions.sh:/docker-entrypoint-initdb.d/995_extensions.sh
+
+  timescaledb-dn02:
+    image: timescale/timescaledb-postgis:2.2.1-pg13
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=postgres
+    ports:
+      - 5434:5432
+    volumes:
+      - postgresql_dn02:/var/lib/postgresql/data
+      - ./docker/postgresql/docker-entrypoint-initdb.d/990_trustall.sh:/docker-entrypoint-initdb.d/990_trustall.sh
+      - ./docker/postgresql/docker-entrypoint-initdb.d/991_unsafeboost.sh:/docker-entrypoint-initdb.d/991_unsafeboost.sh
+      - ./docker/postgresql/docker-entrypoint-initdb.d/993_init-datanode.sh:/docker-entrypoint-initdb.d/993_init-datanode.sh

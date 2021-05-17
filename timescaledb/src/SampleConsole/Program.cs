@@ -134,6 +134,36 @@ namespace SampleConsole
             //await SmallSameSeedCopy(parallel, count);
         }
 
+        [Command("seedsensordata")]
+        public async Task Seed()
+        {
+            Console.WriteLine($"Begin seed database.");
+            var completed = 0;
+            var ct = Context.CancellationToken;
+            var sw = Stopwatch.StartNew();
+            using (var connection = _connection.Create())
+            {
+                await connection.OpenAsync(ct);
+                using (var transaction = await connection.BeginTransactionAsync(ct))
+                {
+                    try
+                    {
+                        var rows = await SensorData.InsertSampleDataAsync(connection, transaction);
+                        await transaction.CommitAsync(ct);
+                        completed += rows;
+                        Console.WriteLine($"complete {completed}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine(ex);
+                        await transaction.RollbackAsync(ct);
+                        throw;
+                    }
+                }
+            }
+            Console.WriteLine($"Complete seed database. completed {completed}, duration {sw.Elapsed.TotalSeconds}sec");
+        }
+
         [Command("seed")]
         public async Task Seed(int parallel = 100, int count = 10000)
         {

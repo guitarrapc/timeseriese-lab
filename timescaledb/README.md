@@ -140,7 +140,7 @@ docker-compose exec timescaledb du -hs /var/lib/postgresql/data/
 ```
 
 ```sql
-SELECT pg_size_pretty(pg_database_size('timeseriese'))
+SELECT pg_size_pretty(pg_database_size('postgres'))
 ```
 
 **hypertable disabled**

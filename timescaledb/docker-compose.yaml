@@ -7,12 +7,13 @@ volumes:
 
 services:
   timescaledb:
-    image: timescale/timescaledb:2.1.1-pg13
+    image: timescale/timescaledb:2.2.1-pg13
     ports:
       - 5432:5432
     environment:
+      - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=timeseriese
+      - POSTGRES_DB=postgres
       - TS_TUNE_MAX_CONNS=1000
     volumes:
       - postgresql:/var/lib/postgresql/data
@@ -34,8 +35,8 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/etc/grafana/dashboards
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./docker/grafana/dashboards:/etc/grafana/dashboards
       - grafana:/var/lib/grafana
     depends_on:
       - timescaledb
