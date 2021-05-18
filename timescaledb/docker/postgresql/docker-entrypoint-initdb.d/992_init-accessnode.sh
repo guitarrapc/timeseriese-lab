@@ -16,15 +16,15 @@ sed -ri "s!^#?(jit)\s*=.*!\1 = off!" /var/lib/postgresql/data/postgresql.conf
 grep "jit" /var/lib/postgresql/data/postgresql.conf
 
 echo "Waiting for data nodes..."
-until PGPASSWORD=$POSTGRES_PASSWORD psql -h timescaledb-dn01 -d "$POSTGRES_DB:-$POSTGRES_USER" -U "$POSTGRES_USER" -c '\q'; do
+until PGPASSWORD=$POSTGRES_PASSWORD psql -h timescaledb-dn01 -d "${POSTGRES_DB:-$POSTGRES_USER}" -U "$POSTGRES_USER" -c '\q'; do
     sleep 5s
 done
-until PGPASSWORD=$POSTGRES_PASSWORD psql -h timescaledb-dn02 -d "$POSTGRES_DB:-$POSTGRES_USER" -U "$POSTGRES_USER" -c '\q'; do
+until PGPASSWORD=$POSTGRES_PASSWORD psql -h timescaledb-dn02 -d "${POSTGRES_DB:-$POSTGRES_USER}" -U "$POSTGRES_USER" -c '\q'; do
     sleep 5s
 done
 
 echo "Connect data nodes to cluster and create distributed hypertable..."
-psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB:-$POSTGRES_USER" <<-EOSQL
-SELECT add_data_node('dn01', host => 'timescaledb-dn01', port => 5432, password => '$POSTGRES_PASSWORD', database => '$POSTGRES_DB:-$POSTGRES_USER');
-SELECT add_data_node('dn02', host => 'timescaledb-dn02', port => 5432, password => '$POSTGRES_PASSWORD', database => '$POSTGRES_DB:-$POSTGRES_USER');
+psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "${POSTGRES_DB:-$POSTGRES_USER}" <<-EOSQL
+SELECT add_data_node('dn01', host => 'timescaledb-dn01', port => 5432, password => '$POSTGRES_PASSWORD', database => '${POSTGRES_DB:-$POSTGRES_USER}');
+SELECT add_data_node('dn02', host => 'timescaledb-dn02', port => 5432, password => '$POSTGRES_PASSWORD', database => '${POSTGRES_DB:-$POSTGRES_USER}');
 EOSQL
